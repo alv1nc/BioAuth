@@ -75,7 +75,7 @@ class DatabaseManager:
                 return row[0],row[1],row[2]
             else:
                 return None,None,None
-    def identify_user(self,face_vector,threshold=0.4):
+    def identify_user(self,face_vector):
         with self.conn.cursor as curr:
             curr.execute("""SELECT user_id, (face_vector <-> %s) as distance, metadata
                          FROM users
@@ -147,7 +147,6 @@ class DatabaseManager:
                     "voice_score": row[3],
                     "timestamp": row[4]
                 })
-            
             return final
             
 

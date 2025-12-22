@@ -77,7 +77,7 @@ class DatabaseManager:
                 return None,None,None
     def identify_user(self,face_vector):
         with self.conn.cursor as curr:
-            curr.execute("""SELECT user_id, (face_vector <-> %s) as distance, metadata
+            curr.execute("""SELECT user_id, (face_vector <=> %s) as distance, metadata,voice_vector,face_vector
                          FROM users
                          WHERE is_active = TRUE
                          ORDER BY distance ASC
@@ -86,12 +86,29 @@ class DatabaseManager:
             row=curr.fetchone()
 
             if row:
-                user_id,distance,metadata=row
+                user_id,distance,metadata,voice,face=row
 
                 meta=json.loads(metadata) if metadata else None
 
-                return user_id,float(distance),metadata
-            return None,None,None
+                return user_id,metadata,face,voice
+            return None,None,None,None
+    def summarize_user(self,user_id):
+        with self.conn.cursor as curr:
+            curr.execute("SELECT is_active,created_at,metadata FROM users WHERE user_id = %s",(user_id,))
+            row = curr.fetchone()
+
+            if row:
+                is_active,created_at,metadata = row
+                metadata = json.loads(metadata) if metadata else None
+
+                return {
+                    "user_id": user_id,
+                    "is_active": is_active,
+                    "created_at": created_at,
+                    "metadata": metadata
+                }
+            return None
+
 
     def get_users_list(self):
         with self.conn.cursor as curr:

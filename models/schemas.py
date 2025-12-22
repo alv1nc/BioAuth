@@ -22,7 +22,7 @@ class IdentificationResponse(BaseModel):
     message: str
 
 
-class UserSummary(BaseModel):
+class UserSummary(BaseModel): #helpers
     user_id: str
     is_active: bool
     created_at: str

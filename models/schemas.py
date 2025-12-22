@@ -15,7 +15,7 @@ class VerificationResponse(BaseModel):
 
 class IdentificationResponse(BaseModel):
     identified: bool
-    best_match_user_id: Optional[str] = None
+    best_match_userid: Optional[str] = None
     face_score: float
     voice_score: float
     metadata: Optional[Dict[str, Any]] = None

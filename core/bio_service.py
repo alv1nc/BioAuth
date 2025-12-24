@@ -2,22 +2,19 @@ import numpy as np
 import torchaudio
 import os
 
-from speechbrain import EncoderClassifier
+from speechbrain.inference.speaker import EncoderClassifier
 from deepface import DeepFace
 
-from core.database import DatabaseManager
-
+from models.database import DatabaseManager
 
 
 class BioAuthService:
-    def __init__(self):
+    def __init__(self,speech_path):
+
         self.db=DatabaseManager()
 
-
-        #temp folder here
-
         self.speaker_model = EncoderClassifier.from_hparams(
-        source="./pretrained_model",
+        source=speech_path,
         hparams_file='hyperparams.yaml' 
         )
 
@@ -28,7 +25,7 @@ class BioAuthService:
             try:
                 obj = DeepFace.represent(
                     img_path=path,
-                    model_nam= "VGG-Face",
+                    model_name= "VGG-Face",
                     detector_backend="retinaface",
                     enforce_detection = False
                 )
@@ -64,23 +61,30 @@ class BioAuthService:
         return np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2))
     
 
-    def cleanup(self,paths = list):
+    def _cleanup(self,paths = list):
         for path in paths:
             if os.path.exists(path):
                 os.remove(path)
     
     def register_user(self,user_id,audio_path,photo_paths = list,metadata=None):
         try:
-            face_vector, voice_vector = self.get_vectors(audio_path,photo_paths)
+            face_vector, voice_vector = self._get_vectors(audio_path,photo_paths)
             success = self.db.add_user(user_id,face_vector,voice_vector,metadata)
-            return success
+            if success is True:
+                return {
+                    "user_id": user_id,
+                    "status": "registered",
+                    "message": "User registered successfully"
+                }
+            else:
+                raise ValueError("User ID already exists")
         finally:
-            self.cleanup(photo_paths + [audio_path])
+            self._cleanup(photo_paths + [audio_path])
 
-    def verify_user(self,user_id,audio_path,photo_paths = list, metadata=None):
+    def verify_user(self,user_id,audio_path,photo_paths = list):
         try:
-            face_vector, voice_vector = self.get_vectors(audio_path,photo_paths)
-            stored_face, stored_voice, _ = self.db.get_user_vectors(user_id)
+            face_vector, voice_vector = self._get_vectors(audio_path,photo_paths)
+            stored_face, stored_voice, metadata = self.db.get_user_vectors(user_id)
             if stored_face is None or stored_voice is None:
                 raise ValueError("User ID not found or missing biometric data")
             face_similarity = self._calculate_similarity(face_vector, stored_face)
@@ -89,7 +93,7 @@ class BioAuthService:
             authorized = face_similarity > 0.7 and voice_similarity > 0.7
 
             self.db.log_attempt(user_id,face_similarity,voice_similarity,"Authorized" if authorized else "Denied")
-
+            
             return {
                 "authorized": authorized,
                 "face_score": face_similarity,
@@ -98,7 +102,7 @@ class BioAuthService:
                 "message": "Verification completed"
             }
         finally:
-            self.cleanup(photo_paths + [audio_path])
+            self._cleanup(photo_paths + [audio_path])
     def identify_user(self,audio_path,photo_paths = list):
         try:
             face_vector,voice_vector = self._get_vectors(photo_paths=photo_paths)
@@ -133,7 +137,7 @@ class BioAuthService:
             else:
                 raise ValueError("No userid found")
         finally:
-            self.cleanup(photo_paths + [audio_path])
+            self._cleanup(photo_paths + [audio_path])
         
     def summarize_user(self,user_id):
         try:
@@ -147,19 +151,29 @@ class BioAuthService:
             pass
     def user_list(self):
         try:
-            out = self.db.get_users_list()
+            count,out = self.db.get_users_list()
 
             if out is not []:
-                return out
+                return {
+                    "total_users": count,
+                    "users": out
+                    }
             else:
                 raise ValueError("No users Found")
         finally:
             pass
     def delete_user(self,user_id,permanent=False):
         try:
-            cnf = self.db.delete_user(user_id,permanent)
+            cnf,permanent = self.db.delete_user(user_id,permanent)
             if cnf==0:
                 raise ValueError("No user found")
+            mode = "Hard Delete" if permanent else "Soft Delete"
+            return {
+                "user_id": user_id,
+                "deleted": True,
+                "mode": mode,
+                "message": "User deleted successfully"
+            }
         finally:
             pass
     def get_logs(self,limit):
@@ -169,7 +183,9 @@ class BioAuthService:
             if cnf == []:
                 raise ValueError("No log attempts found")
             else:
-                return cnf
+                return {
+                    "logs": cnf
+                }
         finally:
             pass
 

@@ -39,7 +39,6 @@ class DeleteResponse(BaseModel):
     message: str
 
 class LogEntry(BaseModel):
-    id: int
     timestamp: str
     user_id: Optional[str]
     status: str
@@ -50,6 +49,6 @@ class LogListResponse(BaseModel):
     logs: List[LogEntry]
 
 
-class HelthResponse(BaseModel):
+class HealthResponse(BaseModel):
     status: str
     service: str

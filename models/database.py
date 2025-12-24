@@ -18,34 +18,34 @@ class DatabaseManager:
         self.conn.autocommit = True
 
         register_vector(self.conn)
-        self._create_tables()
+        self._createtables()
 
     def _createtables(self):
-        with self.conn as curr:
-            curr.execute("CREATE EXTENSION IF NOT EXISTS")
+        with self.conn.cursor() as curr:
+            curr.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
 
             curr.execute("""
                          CREATE TABLE IF NOT EXISTS users (
                             id  SERIAL PRIMARY KEY,
                             user_id TEXT UNIQUE NOT NULL,
-                            face_vector vector(<face_shape>),
-                            voice_vector vector(<voice_shape>),
+                            face_vector vector(4096),
+                            voice_vector vector(192),
                             metadata TEXT,
                             is_active BOOLEAN DEFAULT TRUE,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+                         """
                          )
-                         """)
             
             curr.execute("""
                         CREATE TABLE IF NOT EXISTS auth_logs (
-                            id SERIAL PRIMARY KEY
+                            id SERIAL PRIMARY KEY,
                             user_id TEXT,
                             face_score FLOAT,
                             voice_score FLOAT,
                             status TEXT,
                             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                         )
+                         );
                         """)
     def add_user(self,user_id,face_vector,voice_vector,metadata=None):
         try:
@@ -54,29 +54,29 @@ class DatabaseManager:
                 curr.execute(
                     """
                     INSERT INTO users (user_id,face_vector,voice_vector,metadata)
-                    VALUES (%s,%s,%s,%s)     
+                    VALUES (%s,%s,%s,%s);     
                     """,
                     (user_id,face_vector,voice_vector,meta_json)
                 )
             return True
         except psycopg2.IntegrityError:
-            # user_id already exists
-            return False
+                # user_id already exists
+                return False
 
     def get_user_vectors(self,user_id):
-        with self.conn.cursor as curr:
-            curr.execute("SELECT face_vector,voice_vector,metadata FROM users WHERE user_id = %s and is_active = TRUE",
+        with self.conn.cursor() as curr:
+            curr.execute("SELECT face_vector,voice_vector,metadata FROM users WHERE user_id = %s and is_active = TRUE;",
                          (user_id,)
                          )
             row=curr.fetchone()
 
             if row:
                 meta=json.loads(row[2]) if row[2] else None
-                return row[0],row[1],row[2]
+                return row[0],row[1],meta
             else:
                 return None,None,None
     def identify_user(self,face_vector):
-        with self.conn.cursor as curr:
+        with self.conn.cursor() as curr:
             curr.execute("""SELECT user_id, (face_vector <=> %s) as distance, metadata,voice_vector,face_vector
                          FROM users
                          WHERE is_active = TRUE
@@ -93,7 +93,7 @@ class DatabaseManager:
                 return user_id,metadata,face,voice
             return None,None,None,None
     def summarize_user(self,user_id):
-        with self.conn.cursor as curr:
+        with self.conn.cursor() as curr:
             curr.execute("SELECT is_active,created_at,metadata FROM users WHERE user_id = %s",(user_id,))
             row = curr.fetchone()
 
@@ -111,35 +111,35 @@ class DatabaseManager:
 
 
     def get_users_list(self):
-        with self.conn.cursor as curr:
+        with self.conn.cursor() as curr:
             curr.execute("SELECT user_id, is_active, metadata, created_at FROM users")
             rows=curr.fetchall()
 
             final=[]
             for row in rows:
-                meta_dict = json.loads(row[2] if row[2] else None)
+                meta_dict = json.loads(row[2]) if row[2] else None
                 final.append({
                     "user_id":row[0],
                     "is_active":row[1],
                     "metadata":meta_dict,
-                    "created_at":row[3]
+                    "created_at": row[3].isoformat() if row[3] else None
                 })
-            return final
+            return curr.rowcount,final
     def delete_user(self,user_id,permanent=False):
-        with self.conn.cursor as curr:
+        with self.conn.cursor() as curr:
             if permanent:
-                curr.execute("DELETE FROM users WHERE user_id = %s",(user_id))
+                curr.execute("DELETE FROM users WHERE user_id = %s",(user_id,))
             else:
                 curr.execute("UPDATE users SET is_active = %s WHERE user_id = %s",(False,user_id))
         #postgre returns the number of rows affected by the query, applicable to any command..
-        return curr.rowcount>0
+            return curr.rowcount>0,permanent
     def log_attempt(self, user_id, face_score, voice_score, status):
-        with self.conn.cursor as curr:
-            curr. execute("""
+        with self.conn.cursor() as curr:
+            curr.execute("""
                           INSERT INTO auth_logs (user_id,face_score,voice_score,status) 
-                          VALUES (%s,%s,%s,%s,%s)
+                          VALUES (%s,%s,%s,%s)
                           """,
-                          (user_id,face_score,voice_score,status)
+                          (user_id,float(face_score),float(voice_score),status)
             )
     #security:
 
@@ -162,7 +162,7 @@ class DatabaseManager:
                     "status": row[1],
                     "face_score": row[2],
                     "voice_score": row[3],
-                    "timestamp": row[4]
+                    "timestamp": row[4].isoformat() if row[4] else None
                 })
             return final
             

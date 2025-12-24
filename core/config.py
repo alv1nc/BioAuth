@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PASS: str
 
-    SPEECHBRAIN_DIR: str = os.path.join(os.getcwd(),"model_weights")
+    SPEECHBRAIN_DIR: str = os.path.join(os.getcwd(),"pretrained_model")
 
     class Config:
         env_file = ".env"

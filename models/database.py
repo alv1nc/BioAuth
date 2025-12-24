@@ -165,6 +165,17 @@ class DatabaseManager:
                     "timestamp": row[4].isoformat() if row[4] else None
                 })
             return final
+    def health_check(self):
+        try:
+            with self.conn.cursor(cursor_factory=DictCursor) as curr:
+                curr.execute("SELECT 1;")
+                result = curr.fetchone()
+                if result and result[0] == 1:
+                    return True
+                else:
+                    return False
+        except Exception as e:
+            return False
             
 
 

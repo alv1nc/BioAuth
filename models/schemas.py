@@ -46,9 +46,11 @@ class LogEntry(BaseModel):
     voice_score: float
 
 class LogListResponse(BaseModel):
+    count: int
     logs: List[LogEntry]
 
 
 class HealthResponse(BaseModel):
     status: str
     service: str
+    checks: Dict[str, str]

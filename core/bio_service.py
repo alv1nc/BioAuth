@@ -184,8 +184,24 @@ class BioAuthService:
                 raise ValueError("No log attempts found")
             else:
                 return {
+                    "count": len(cnf),
                     "logs": cnf
                 }
+        finally:
+            pass
+    def health_check(self):
+        try:
+            db_status = "healthy" if self.db.health_check() else "unhealthy"
+            checks = {
+                "database": db_status,
+                "models": "loaded"
+            }
+            overall_status = "healthy" if db_status == "healthy" else "unhealthy"
+            return {
+                "status": overall_status,
+                "service": "Bio-Authentication Service",
+                "checks": checks
+            }
         finally:
             pass
 

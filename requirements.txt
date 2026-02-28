@@ -3,3 +3,7 @@ torch
 torchaudio
 openai-whisper
 rapidfuzz
+fastapi
+psycopg2-binary
+pgvector
+deepface

@@ -13,9 +13,9 @@ class BioAuthService:
 
         self.db=DatabaseManager()
 
-        self.speaker_model = EncoderClassifier.from_hparams(
-        source=speech_path,
-        hparams_file='hyperparams.yaml' 
+        speaker_model = EncoderClassifier.from_hparams(
+        source="speechbrain/spkrec-ecapa-voxceleb",
+        savedir='/home/yeesus/YZ/bioauth/model',
         )
 
 

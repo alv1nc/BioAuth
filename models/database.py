@@ -2,7 +2,6 @@ import psycopg2
 import json
 from psycopg2.extras import DictCursor
 from pgvector.psycopg2 import register_vector
-import os
 
 class DatabaseManager:
     def __init__(self):
@@ -17,8 +16,9 @@ class DatabaseManager:
         self.conn= psycopg2.connect(**self.db_config)
         self.conn.autocommit = True
 
-        register_vector(self.conn)
         self._createtables()
+        register_vector(self.conn)
+        
 
     def _createtables(self):
         with self.conn.cursor() as curr:

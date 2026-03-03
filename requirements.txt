@@ -1,9 +1,14 @@
-speechbrain
-torch
-torchaudio
+torch==2.8.0
+torchaudio==2.8.0
+speechbrain==1.0.3
 openai-whisper
 rapidfuzz
 fastapi
 psycopg2-binary
 pgvector
 deepface
+pydantic_settings
+huggingface_hub<0.23.0 
+soundfile
+uvicorn
+python-multipart

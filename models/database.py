@@ -49,7 +49,7 @@ class DatabaseManager:
                         """)
     def add_user(self,user_id,face_vector,voice_vector,metadata=None):
         try:
-            meta_json = json.dump(metadata) if metadata else None 
+            meta_json = json.dumps(metadata) if metadata else None 
             with self.conn.cursor() as curr:
                 curr.execute(
                     """
@@ -77,7 +77,7 @@ class DatabaseManager:
                 return None,None,None
     def identify_user(self,face_vector):
         with self.conn.cursor() as curr:
-            curr.execute("""SELECT user_id, (face_vector <=> %s) as distance, metadata,voice_vector,face_vector
+            curr.execute("""SELECT user_id, (face_vector <=> %s::vector) as distance, metadata,voice_vector,face_vector
                          FROM users
                          WHERE is_active = TRUE
                          ORDER BY distance ASC
@@ -90,7 +90,7 @@ class DatabaseManager:
 
                 meta=json.loads(metadata) if metadata else None
 
-                return user_id,metadata,face,voice
+                return user_id,meta,face,voice
             return None,None,None,None
     def summarize_user(self,user_id):
         with self.conn.cursor() as curr:

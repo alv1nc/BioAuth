@@ -13,7 +13,7 @@ class BioAuthService:
 
         self.db=DatabaseManager()
 
-        speaker_model = EncoderClassifier.from_hparams(
+        self.speaker_model = EncoderClassifier.from_hparams(
         source="speechbrain/spkrec-ecapa-voxceleb",
         savedir='/home/yeesus/YZ/bioauth/model',
         )
@@ -27,7 +27,7 @@ class BioAuthService:
                     img_path=path,
                     model_name= "VGG-Face",
                     detector_backend="retinaface",
-                    enforce_detection = False
+                    enforce_detection = True
                 )
                 if obj:
                     vector=obj[0]["embedding"]
@@ -44,6 +44,7 @@ class BioAuthService:
 
         try:
             signal, fs = torchaudio.load(audio_path)
+            signal = signal[0:1, :]
             voice_embedding = self.speaker_model.encode_batch(signal)
             emb= voice_embedding.squeeze().tolist()
         except Exception as e:
@@ -105,7 +106,7 @@ class BioAuthService:
             self._cleanup(photo_paths + [audio_path])
     def identify_user(self,audio_path,photo_paths = list):
         try:
-            face_vector,voice_vector = self._get_vectors(photo_paths=photo_paths)
+            face_vector,voice_vector = self._get_vectors(audio_path=audio_path,photo_paths=photo_paths)
 
             user_id,metadata,face_near,voice_near = self.db.identify_user(face_vector)
 

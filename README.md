@@ -1,32 +1,32 @@
 # BioAuth System
 
-A complete biometric authentication system featuring a FastAPI Python backend with deep learning models (SpeechBrain for voice, DeepFace for facial recognition) and a sleek React/Vite frontend dashboard.
+A complete biometric authentication system featuring a FastAPI Python backend with deep learning models (SpeechBrain for voice, DeepFace for facial recognition).
 
 ## Prerequisites
 
 Before starting, ensure you have the following installed on your system:
 - Python 3.9+
 - Node.js 18+ and npm
-- PostgreSQL 15+
-- `pgvector` extension installed on your PostgreSQL server
 
 ---
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### 1. Database Setup
-1. Create a PostgreSQL database named `bio_auth`
-2. Ensure you have the `pgvector` extension installed. You can install it globally on Linux using:
-   ```bash
-   sudo apt install postgresql-15-pgvector
-   ```
-3. Connect to your database and enable the extension (the backend setup will also attempt this automatically if your user has permissions):
-   ```sql
-   CREATE EXTENSION IF NOT EXISTS vector;
-   ```
-4. If your Postgres credentials differ from `postgres/password123` on `localhost:5432`, update them in `models/database.py`.
+The backend requires a PostgreSQL database with the `pgvector` extension to store and query biometric embeddings. A pre-configured Docker Compose file is provided to streamline this setup.
 
-### 2. Backend Setup
+1. Ensure you have Docker and Docker Compose installed on your system.
+2. Navigate to the `database` directory:
+   ```bash
+   cd database
+   ```
+3. Start the `pgvector` PostgreSQL container in the background:
+   ```bash
+   docker-compose up -d
+   ```
+   *This spins up a container named `bio_auth_db` running PostgreSQL 16 on `localhost:5432` with credentials `postgres/password123` and a database named `bio_auth`. The vector extension will be created automatically by the program.*
+
+### 2. BioAuth Setup
 1. Open a terminal in the root directory.
 2. Create and activate a virtual environment:
    ```bash
@@ -41,7 +41,7 @@ Before starting, ensure you have the following installed on your system:
    ```bash
    python main.py
    ```
-   *The backend will now be running on `http://localhost:8000`.*
+   *BioAuth will now be running on `http://localhost:8000`.*
 
 ### 3. Frontend Setup
 1. Open a new terminal and navigate to the `frontend` folder:
@@ -112,3 +112,10 @@ Retrieves a list of recent authentication attempts.
 ### GET `/health`
 Checks the overall system and database health.
 - **Returns:** `{ status, service, checks: { database, models } }`
+
+---
+# Notes
+
+- Voice verification is genereally not trusted as the detection system heavily depends on the quality of audio from the user end, hence BioAuth explicitly returns the confidence of both..
+- The system will likely take a lot of time on the processing of the first image/audio since it has to download the model parameters first, after which the execution will be compeletly offline and will depend on the hardware specification of the hosting device.
+- The system uses Cosine Similarity (<=>) to determine matches. The threshold for what constitutes a "pass" or "fail" can be manually adjusted in the backend configuration, allowing you to prioritize either high security (strict threshold) or user convenience (loose threshold).

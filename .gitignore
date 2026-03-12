@@ -1,6 +1,6 @@
 __pycache__
 .venv
-database
+database/database
 pretrained_model
 example1.wav
 face.jpeg

@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: bio_auth_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password123
+      - POSTGRES_DB=bio_auth
+    
+    # --- THIS IS THE MAGIC PART ---
+    volumes:
+      - ./database:/var/lib/postgresql/data

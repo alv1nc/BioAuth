@@ -60,7 +60,7 @@ The backend requires a PostgreSQL database with the `pgvector` extension to stor
 
 ---
 
-## 📡 API Documentation
+##  API Documentation
 
 Base URL: `http://localhost:8000/`
 

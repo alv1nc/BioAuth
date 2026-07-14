@@ -1,5 +1,9 @@
 import os
 import warnings
+import faulthandler
+faulthandler.enable()
+
+import psycopg2
 
 # 1. Suppress TensorFlow Logs (C++ Backend)
 # '0' = all logs, '1' = filter info, '2' = filter warnings, '3' = filter errors
@@ -26,13 +30,12 @@ app = FastAPI(
 )
 
 # 2. Configure CORS (Crucial for your Frontend)
-# Without this, your React/HTML site cannot communicate with this Python backend.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # "*" allows ALL sites to access this. Safe for dev, risky for prod.
+    allow_origins=["*"],  
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, DELETE, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],  
+    allow_headers=["*"],  
 )
 
 # 3. Include the Router

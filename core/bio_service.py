@@ -15,7 +15,7 @@ class BioAuthService:
 
         self.speaker_model = EncoderClassifier.from_hparams(
         source="speechbrain/spkrec-ecapa-voxceleb",
-        savedir='/home/yeesus/YZ/bioauth/model',
+        savedir=speech_path,
         )
 
 

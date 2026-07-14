@@ -25,6 +25,7 @@ The backend requires a PostgreSQL database with the `pgvector` extension to stor
    docker-compose up -d
    ```
    *This spins up a container named `bio_auth_db` running PostgreSQL 16 on `localhost:5432` with credentials `postgres/password123` and a database named `bio_auth`. The vector extension will be created automatically by the program.*
+   ⚠️ **CAUTION:** Ensure that no native PostgreSQL service is running on your host machine. If port `5432` is already in use by a local installation, the Docker container will throw a port allocation error and fail to boot.
 
 ### 2. BioAuth Setup
 1. Open a terminal in the root directory.
@@ -39,25 +40,9 @@ The backend requires a PostgreSQL database with the `pgvector` extension to stor
    ```
 4. Start the FastAPI server (it will automatically build the tables on first boot and download the required ML models):
    ```bash
-   python main.py
+   uvicorn main:app --host 0.0.0.0 --port 8000
    ```
    *BioAuth will now be running on `http://localhost:8000`.*
-
-### 3. Frontend Setup
-1. Open a new terminal and navigate to the `frontend` folder:
-   ```bash
-   cd frontend
-   ```
-2. Install the Node dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-   *The frontend dashboard will now be running on `http://localhost:5173`.*
-
 ---
 
 ##  API Documentation
@@ -73,7 +58,7 @@ Enrolls a new user by generating embeddings from their face and voice.
   - `user_id` (string, required): A unique identifier for the user.
   - `metadata` (JSON string, optional): Additional contextual data to store.
   - `photos` (Array of files, required): 1 or more face images (JPG/PNG).
-  - `audio` (file, required): A voice clip recording.
+  - `audio` (file, required): A voice clip recording (WAV format, mono, 16kHz recommended).
 - **Returns:** `{ user_id, status, message }`
 
 ### POST `/verify`
@@ -82,7 +67,7 @@ Verifies a specific user's identity based on an explicit `user_id`.
 - **Parameters:**
   - `user_id` (string, required): The ID of the user attempting verification.
   - `photos` (Array of files, required): Live face image capture(s).
-  - `audio` (file, required): Live voice recording.
+  - `audio` (file, required): Live voice recording (WAV format, mono, 16kHz recommended).
 - **Returns:** `{ authorized, face_score, voice_score, metadata, message }` (Returns 400 if user does not exist).
 
 ### POST `/identify`
@@ -90,7 +75,7 @@ Natively matches a live capture against all enrolled users in the database using
 - **Content-Type:** `multipart/form-data`
 - **Parameters:**
   - `photos` (Array of files, required): Live face image capture(s).
-  - `audio` (file, required): Live voice recording.
+  - `audio` (file, required): Live voice recording (WAV format, mono, 16kHz recommended).
 - **Returns:** `{ identified, best_match_userid, face_score, voice_score, metadata, message }`
 
 ### GET `/users`
@@ -116,6 +101,8 @@ Checks the overall system and database health.
 ---
 # Notes
 
-- Voice verification is genereally not trusted as the detection system heavily depends on the quality of audio from the user end, hence BioAuth explicitly returns the confidence of both..
-- The system will likely take a lot of time on the processing of the first image/audio since it has to download the model parameters first, after which the execution will be compeletly offline and will depend on the hardware specification of the hosting device.
+- Voice verification is generally not trusted as the detection system heavily depends on the quality of audio from the user end, hence BioAuth explicitly returns the confidence of both.
+- Audio input **must** be a valid WAV file (preferably 16kHz mono PCM) to ensure successful feature extraction using `torchaudio`.
+- The SpeechBrain model downloads and saves its parameters locally. Previously, this path was hardcoded, but it has been fixed to dynamically load from the `SPEECHBRAIN_DIR` config setting (which defaults to a local `pretrained_model` folder in the project root).
+- The system will likely take a lot of time on the processing of the first image/audio since it has to download the model parameters first, after which the execution will be completely offline and will depend on the hardware specification of the hosting device.
 - The system uses Cosine Similarity (<=>) to determine matches. The threshold for what constitutes a "pass" or "fail" can be manually adjusted in the backend configuration, allowing you to prioritize either high security (strict threshold) or user convenience (loose threshold).

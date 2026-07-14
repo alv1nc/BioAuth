@@ -12,3 +12,4 @@ huggingface_hub<0.23.0
 soundfile
 uvicorn
 python-multipart
+tf-keras
